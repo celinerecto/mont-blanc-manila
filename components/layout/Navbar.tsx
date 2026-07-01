@@ -3,29 +3,53 @@
 import Link from "next/link";
 import { useState } from "react";
 
+const NAV_ITEMS = [
+  { label: "The Leaderboard", href: "#leaderboard" },
+  { label: "What is a Mont Blanc?", href: "#about" },
+  { label: "Find a Mont Blanc near me", href: "#browse" },
+  { label: "Submit a Café", href: "/submit" },
+];
+
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const handleNav = (href: string) => {
+    setMenuOpen(false);
+    if (href.startsWith("#")) {
+      const el = document.getElementById(href.slice(1));
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-espresso text-white">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-lg">☕</span>
-          <span className="font-playfair font-bold text-white text-base tracking-tight">Mont Blanc Manila</span>
+        <Link href="/" className="flex items-center gap-2 flex-none">
+          <span className="text-base">☕</span>
+          <span className="font-playfair font-bold text-white text-sm tracking-tight">Mont Blancs of Manila</span>
         </Link>
 
         {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-8">
-          <Link href="/leaderboard" className="text-white/70 hover:text-white transition-colors text-sm">
-            Leaderboard
-          </Link>
-          <Link href="/browse" className="text-white/70 hover:text-white transition-colors text-sm">
-            Browse
-          </Link>
-          <Link href="/submit" className="text-white/70 hover:text-white transition-colors text-sm">
-            Submit a Café
-          </Link>
+        <div className="hidden md:flex items-center gap-6">
+          {NAV_ITEMS.map((item) =>
+            item.href.startsWith("#") ? (
+              <button
+                key={item.href}
+                onClick={() => handleNav(item.href)}
+                className="text-white/70 hover:text-white transition-colors text-xs"
+              >
+                {item.label}
+              </button>
+            ) : (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="text-white/70 hover:text-white transition-colors text-xs"
+              >
+                {item.label}
+              </Link>
+            )
+          )}
         </div>
 
         {/* Mobile hamburger */}
@@ -44,10 +68,27 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="md:hidden border-t border-white/10 bg-espresso px-4 py-4 space-y-3">
-          <Link href="/leaderboard" className="block text-white/80 py-2 text-sm" onClick={() => setMenuOpen(false)}>Leaderboard</Link>
-          <Link href="/browse" className="block text-white/80 py-2 text-sm" onClick={() => setMenuOpen(false)}>Browse</Link>
-          <Link href="/submit" className="block text-white/80 py-2 text-sm" onClick={() => setMenuOpen(false)}>Submit a Café</Link>
+        <div className="md:hidden border-t border-white/10 bg-espresso px-4 py-4 space-y-1">
+          {NAV_ITEMS.map((item) =>
+            item.href.startsWith("#") ? (
+              <button
+                key={item.href}
+                onClick={() => handleNav(item.href)}
+                className="block w-full text-left text-white/80 py-2.5 text-sm border-b border-white/10 last:border-0"
+              >
+                {item.label}
+              </button>
+            ) : (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="block text-white/80 py-2.5 text-sm border-b border-white/10 last:border-0"
+                onClick={() => setMenuOpen(false)}
+              >
+                {item.label}
+              </Link>
+            )
+          )}
         </div>
       )}
     </nav>

@@ -1,8 +1,9 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import ItemCard from "@/components/cafe/ItemCard";
 import RecentReviews from "@/components/cafe/RecentReviews";
+import BrowseSection from "@/components/cafe/BrowseSection";
 import MapPreview from "@/components/map/MapPreview";
+import Link from "next/link";
 import type { Item, Review } from "@/types";
 
 export const revalidate = 60;
@@ -16,14 +17,16 @@ async function getLeaderboard(): Promise<Item[]> {
     .gte("votes.created_at", sevenDaysAgo)
     .limit(6);
   if (!items) return [];
-  return items.map((item) => {
-    const weeklyVotes = (item.votes as { id: string; created_at: string }[])?.filter(
-      (v) => v.created_at >= sevenDaysAgo
-    ).length ?? 0;
-    const ratings = (item.reviews as { rating: number }[])?.map((r) => r.rating) ?? [];
-    const avgRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
-    return { ...item, vote_count: weeklyVotes, avg_rating: avgRating, user_has_voted: false };
-  }).sort((a, b) => (b.vote_count ?? 0) - (a.vote_count ?? 0));
+  return items
+    .map((item) => {
+      const weeklyVotes = (item.votes as { id: string; created_at: string }[])?.filter(
+        (v) => v.created_at >= sevenDaysAgo
+      ).length ?? 0;
+      const ratings = (item.reviews as { rating: number }[])?.map((r) => r.rating) ?? [];
+      const avgRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
+      return { ...item, vote_count: weeklyVotes, avg_rating: avgRating, user_has_voted: false };
+    })
+    .sort((a, b) => (b.vote_count ?? 0) - (a.vote_count ?? 0));
 }
 
 async function getAllItems(): Promise<Item[]> {
@@ -32,7 +35,7 @@ async function getAllItems(): Promise<Item[]> {
   const { data: items } = await supabase
     .from("items")
     .select(`*, cafe:cafes(*), photos(id, storage_url), votes(id, created_at), reviews(rating)`)
-    .limit(9);
+    .order("created_at", { ascending: false });
   if (!items) return [];
   return items.map((item) => {
     const weeklyVotes = (item.votes as { id: string; created_at: string }[])?.filter(
@@ -68,55 +71,30 @@ export default async function HomePage() {
   return (
     <div className="bg-white">
 
-      {/* HERO — centred, large serif */}
-      <section className="text-center px-4 sm:px-6 pt-20 pb-16 max-w-3xl mx-auto">
-        <h1 className="font-playfair text-5xl sm:text-6xl lg:text-7xl text-espresso leading-tight mb-4">
-          Find Manila's best<br />
-          <span className="italic text-orange">Mont Blanc.</span>
-        </h1>
-        <p className="text-brown text-lg leading-relaxed mb-8 max-w-lg mx-auto">
-          The community-driven guide to the finest Mont Blanc coffees across Manila.
-          Vote weekly. Discover your next favourite cup.
+      {/* PAGE HEADER */}
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 pt-10 pb-6">
+        <p className="font-playfair text-xl text-espresso leading-snug">
+          Mont Blancs of Manila
         </p>
-        <div className="flex items-center justify-center gap-3 flex-wrap">
-          <Link
-            href="/browse"
-            className="bg-orange text-white font-semibold px-8 py-3 rounded-full hover:bg-orange-hover transition-all duration-200 hover:scale-105"
-          >
-            Browse all cafés
-          </Link>
-          <Link
-            href="/leaderboard"
-            className="text-espresso font-semibold px-8 py-3 rounded-full border border-brown-border hover:border-espresso transition-all duration-200"
-          >
-            This week's ranking →
-          </Link>
-        </div>
-      </section>
+        <p className="text-brown-muted text-sm mt-1">
+          A digital guide to the best Mont Blanc&apos;s in the city.
+        </p>
+      </div>
 
-      {/* DIVIDER */}
       <div className="border-t border-brown-border" />
 
-      {/* WEEKLY LEADERBOARD */}
-      <section className="max-w-[1200px] mx-auto px-4 sm:px-6 py-14">
-        <div className="flex items-end justify-between mb-8">
-          <div>
-            <p className="text-xs font-semibold tracking-widest uppercase text-brown-muted mb-1">This week</p>
-            <h2 className="font-playfair text-4xl text-espresso">Top Mont Blancs 🏆</h2>
-          </div>
-          <Link href="/leaderboard" className="hidden sm:block text-sm text-orange hover:text-orange-hover transition-colors font-medium">
-            Full ranking →
-          </Link>
+      {/* LEADERBOARD */}
+      <section id="leaderboard" className="max-w-[1200px] mx-auto px-4 sm:px-6 py-12">
+        <div className="mb-8">
+          <p className="text-xs font-semibold tracking-widest uppercase text-brown-muted mb-1">This week</p>
+          <h2 className="font-playfair text-3xl text-espresso">Top Mont Blancs</h2>
         </div>
 
         {leaderboard.length === 0 ? (
-          <div className="text-center py-20 bg-[#f5f5f3] rounded-2xl">
+          <div className="text-center py-16 bg-[#f5f5f3] rounded-2xl">
             <div className="text-5xl mb-4">☕</div>
             <p className="font-playfair text-xl text-espresso mb-2">No votes yet this week</p>
-            <p className="text-brown-muted text-sm mb-5">Be the first to vote and crown this week's champion.</p>
-            <Link href="/browse" className="bg-orange text-white font-semibold px-6 py-2.5 rounded-full hover:bg-orange-hover transition-all">
-              Browse Cafés
-            </Link>
+            <p className="text-brown-muted text-sm">Be the first to vote and crown this week&apos;s champion.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -127,71 +105,103 @@ export default async function HomePage() {
         )}
       </section>
 
-      {/* DIVIDER */}
       <div className="border-t border-brown-border" />
 
       {/* BROWSE */}
-      <section className="max-w-[1200px] mx-auto px-4 sm:px-6 py-14">
-        <div className="flex items-end justify-between mb-8">
-          <div>
-            <p className="text-xs font-semibold tracking-widest uppercase text-brown-muted mb-1">Explore</p>
-            <h2 className="font-playfair text-4xl text-espresso">Browse Mont Blancs ☕</h2>
-          </div>
-          <Link href="/browse" className="hidden sm:block text-sm text-orange hover:text-orange-hover transition-colors font-medium">
-            See all →
-          </Link>
+      <section id="browse" className="max-w-[1200px] mx-auto px-4 sm:px-6 py-12">
+        <div className="mb-8">
+          <p className="text-xs font-semibold tracking-widest uppercase text-brown-muted mb-1">Explore</p>
+          <h2 className="font-playfair text-3xl text-espresso">Find a Mont Blanc near me</h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {allItems.map((item, idx) => (
-            <ItemCard key={item.id} item={item} rank={idx} showCafe />
-          ))}
-        </div>
-        <div className="mt-8 text-center">
-          <Link href="/browse" className="bg-orange text-white font-semibold px-8 py-3 rounded-full hover:bg-orange-hover transition-all duration-200 hover:scale-105 inline-block">
-            View all cafés
-          </Link>
-        </div>
+        <BrowseSection items={allItems} cafes={mapCafes} />
       </section>
 
-      {/* DIVIDER */}
       <div className="border-t border-brown-border" />
 
-      {/* MAP */}
-      <section className="max-w-[1200px] mx-auto px-4 sm:px-6 py-14">
-        <div className="flex items-end justify-between mb-8">
-          <div>
-            <p className="text-xs font-semibold tracking-widest uppercase text-brown-muted mb-1">Map</p>
-            <h2 className="font-playfair text-4xl text-espresso">Find a café near you</h2>
-          </div>
-          <Link href="/browse" className="hidden sm:block text-sm text-orange hover:text-orange-hover transition-colors font-medium">
-            Open map →
-          </Link>
+      {/* WHAT IS A MONT BLANC */}
+      <section id="about" className="max-w-[1200px] mx-auto px-4 sm:px-6 py-12">
+        <div className="mb-8">
+          <p className="text-xs font-semibold tracking-widest uppercase text-brown-muted mb-1">The drink</p>
+          <h2 className="font-playfair text-3xl text-espresso">What is a Mont Blanc?</h2>
         </div>
-        <div className="h-80 rounded-2xl overflow-hidden border border-brown-border">
-          <MapPreview cafes={mapCafes} />
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          <div className="space-y-5 text-brown leading-relaxed">
+            <p>
+              The Mont Blanc is a coffee drink named after the iconic snow-capped peak on the French-Italian border.
+              It is traditionally made with a shot of espresso topped with a generous cloud of sweetened cream —
+              the white peak mirroring the mountain it was named for.
+            </p>
+            <p>
+              The drink as Manila knows it was popularised by{" "}
+              <span className="font-semibold text-espresso">Good Measure</span>, a café in Fitzroy, Melbourne, Australia.
+              Good Measure began serving their version — a double ristretto crowned with lightly whipped cream — and the
+              drink quickly became a cult favourite, eventually finding its way to the hands of Filipino café owners
+              who brought the concept home.
+            </p>
+            <p>
+              Today, Manila&apos;s café scene has embraced the Mont Blanc wholeheartedly, with each café putting its
+              own spin on the ratio of espresso to cream, the sweetness level, and whether the cream is poured, piped,
+              or spooned on top.
+            </p>
+          </div>
+
+          <div className="bg-[#f5f5f3] rounded-2xl p-8">
+            <h3 className="font-playfair text-xl text-espresso mb-5">What goes into a Mont Blanc</h3>
+            <ul className="space-y-4">
+              {[
+                {
+                  name: "Espresso or Ristretto",
+                  desc: "The base is a concentrated coffee shot — usually a double. A ristretto pull (shorter, sweeter) is common for a cleaner, less bitter base.",
+                },
+                {
+                  name: "Heavy cream",
+                  desc: "Lightly whipped to a soft, pourable consistency — thick enough to sit on top of the coffee without immediately dissolving.",
+                },
+                {
+                  name: "Sugar (optional)",
+                  desc: "Some cafés sweeten the cream with simple syrup or vanilla. Others let the cream stay unsweetened to contrast the espresso.",
+                },
+                {
+                  name: "The ratio",
+                  desc: "The balance of coffee to cream is the signature of each café. This is what separates a great Mont Blanc from a good one.",
+                },
+              ].map((item) => (
+                <li key={item.name} className="flex gap-3">
+                  <span className="text-orange mt-1 flex-none">—</span>
+                  <div>
+                    <span className="font-semibold text-espresso text-sm">{item.name}</span>
+                    <p className="text-brown-muted text-sm mt-0.5">{item.desc}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </section>
 
-      {/* DIVIDER */}
       <div className="border-t border-brown-border" />
 
       {/* RECENT REVIEWS */}
-      <section className="max-w-[1200px] mx-auto px-4 sm:px-6 py-14">
+      <section className="max-w-[1200px] mx-auto px-4 sm:px-6 py-12">
         <div className="mb-8">
           <p className="text-xs font-semibold tracking-widest uppercase text-brown-muted mb-1">Community</p>
-          <h2 className="font-playfair text-4xl text-espresso">Fresh reviews</h2>
+          <h2 className="font-playfair text-3xl text-espresso">Recent reviews</h2>
         </div>
         <RecentReviews reviews={recentReviews} />
       </section>
 
-      {/* SUBMIT — quiet footer strip */}
+      {/* SUBMIT STRIP */}
       <div className="border-t border-brown-border" />
       <section className="max-w-[1200px] mx-auto px-4 sm:px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
           <p className="font-playfair text-xl text-espresso">Know a hidden gem?</p>
-          <p className="text-brown-muted text-sm mt-0.5">Submit a café that's not on our map yet.</p>
+          <p className="text-brown-muted text-sm mt-0.5">Submit a café that&apos;s not on our map yet.</p>
         </div>
-        <Link href="/submit" className="text-orange font-semibold border border-orange px-6 py-2.5 rounded-full hover:bg-orange hover:text-white transition-all duration-200 flex-none text-sm">
+        <Link
+          href="/submit"
+          className="text-orange font-semibold border border-orange px-6 py-2.5 rounded-full hover:bg-orange hover:text-white transition-all duration-200 flex-none text-sm"
+        >
           Submit a café
         </Link>
       </section>
