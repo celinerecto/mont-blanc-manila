@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Inter } from "next/font/google";
+import { Playfair_Display, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -12,9 +12,10 @@ const playfair = Playfair_Display({
   display: "swap",
 });
 
-const inter = Inter({
+const inter = Source_Serif_4({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["300", "400", "600"],
+  style: ["normal", "italic"],
   variable: "--font-inter",
   display: "swap",
 });

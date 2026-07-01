@@ -10,8 +10,8 @@ const config: Config = {
     extend: {
       colors: {
         cream: {
-          DEFAULT: "#FFF8F0",
-          surface: "#FFFDF9",
+          DEFAULT: "#ffffff",
+          surface: "#fafafa",
         },
         orange: {
           DEFAULT: "#E8621A",
