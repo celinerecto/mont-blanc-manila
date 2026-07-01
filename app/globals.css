@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400;1,600&family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --font-playfair: 'Playfair Display', Georgia, serif;
+  --font-inter: 'Inter', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #FFF8F0;
+  color: #5C3D2E;
+  font-family: var(--font-inter);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Leaflet map container */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  border-radius: 1rem;
+  z-index: 0;
+}
+
+/* Warm shimmer skeleton */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #FDE8CC 25%,
+    #FFF8F0 50%,
+    #FDE8CC 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Star rating */
+.star-filled { color: #E8621A; }
+.star-empty { color: #EDD9C0; }
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #FFF8F0; }
+::-webkit-scrollbar-thumb { background: #EDD9C0; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #C4873A; }
+
+/* Vote button pulse */
+@keyframes votePulse {
+  0% { box-shadow: 0 0 0 0 rgba(232, 98, 26, 0.5); }
+  70% { box-shadow: 0 0 0 10px rgba(232, 98, 26, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(232, 98, 26, 0); }
+}
+.vote-pulse {
+  animation: votePulse 0.6s ease-out;
+}
