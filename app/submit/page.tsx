@@ -123,8 +123,7 @@ export default function SubmitPage() {
         <div className="text-7xl mb-6">🎉</div>
         <h1 className="font-playfair text-4xl font-bold text-espresso mb-3">Submission received!</h1>
         <p className="text-brown mb-6">
-          Thanks for adding to the community! Your café will appear with an{" "}
-          <span className="font-semibold">🔍 Unverified</span> badge until our team reviews it.
+          Thanks for submitting! We&apos;ll review your café and publish it within a day or two.
         </p>
         <a href="/browse" className="bg-orange text-white font-bold px-8 py-3 rounded-full hover:bg-orange-hover transition-all inline-block">
           Browse All Cafés ☕
@@ -138,8 +137,8 @@ export default function SubmitPage() {
       <div className="mb-10">
         <h1 className="font-playfair text-4xl font-bold text-espresso mb-2">Submit a Café 🏔️</h1>
         <p className="text-brown-muted">
-          Know a spot serving great Mont Blanc that's not on our map yet? Add it!
-          Your submission will appear with an <strong>🔍 Unverified</strong> badge until reviewed.
+          Know a spot serving great Mont Blanc that&apos;s not on our map yet? Add it!
+          Submissions are reviewed before going live — usually within a day or two.
         </p>
       </div>
 
