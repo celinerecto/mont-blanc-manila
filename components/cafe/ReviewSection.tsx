@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getAnonId } from "@/lib/anonId";
 import StarRating from "@/components/ui/StarRating";
-import AuthModal from "@/components/ui/AuthModal";
 import { formatDate, getInitials } from "@/lib/utils";
 import type { Review, Item } from "@/types";
 
@@ -17,25 +17,27 @@ interface ReviewSectionProps {
 export default function ReviewSection({ initialReviews, items }: ReviewSectionProps) {
   const [reviews, setReviews] = useState<Review[]>(initialReviews);
   const [showForm, setShowForm] = useState(false);
-  const [showAuth, setShowAuth] = useState(false);
   const [selectedItem, setSelectedItem] = useState(items[0]?.id ?? "");
   const [rating, setRating] = useState(5);
   const [body, setBody] = useState("");
+  const [authorName, setAuthorName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const supabase = createClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setShowAuth(true); return; }
     if (!body.trim()) { setError("Please write a review."); return; }
 
     setSubmitting(true);
     setError("");
+
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id ?? getAnonId();
+
     const { data, error: err } = await supabase
       .from("reviews")
-      .insert({ item_id: selectedItem, user_id: user.id, body, rating })
+      .insert({ item_id: selectedItem, user_id: userId, body, rating })
       .select("*, item:items(name, variant)")
       .single();
 
@@ -46,26 +48,20 @@ export default function ReviewSection({ initialReviews, items }: ReviewSectionPr
       setReviews([data as unknown as Review, ...reviews]);
       setBody("");
       setRating(5);
+      setAuthorName("");
       setShowForm(false);
     }
   };
 
-  const handleWriteReview = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setShowAuth(true); return; }
-    setShowForm(true);
-  };
-
   return (
     <section>
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
       <div className="flex items-center justify-between mb-6">
         <h2 className="font-playfair text-2xl font-semibold text-espresso">
           Reviews ({reviews.length})
         </h2>
         {!showForm && (
           <button
-            onClick={handleWriteReview}
+            onClick={() => setShowForm(true)}
             className="bg-orange text-white text-sm font-semibold px-5 py-2 rounded-full hover:bg-orange-hover transition-all hover:scale-105"
           >
             Write a Review
@@ -73,10 +69,19 @@ export default function ReviewSection({ initialReviews, items }: ReviewSectionPr
         )}
       </div>
 
-      {/* Review form */}
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-cream-surface rounded-3xl border border-brown-border shadow-md p-6 mb-8 space-y-4">
           <h3 className="font-playfair text-xl font-semibold text-espresso">Share your thoughts ☕</h3>
+
+          <div>
+            <label className="block text-sm font-medium text-brown mb-1">Your Name (optional)</label>
+            <input
+              value={authorName}
+              onChange={(e) => setAuthorName(e.target.value)}
+              placeholder="e.g. Maria"
+              className="w-full bg-cream border border-brown-border rounded-xl px-4 py-2.5 text-sm text-brown placeholder-brown-muted focus:outline-none focus:border-orange"
+            />
+          </div>
 
           {items.length > 1 && (
             <div>
@@ -132,7 +137,6 @@ export default function ReviewSection({ initialReviews, items }: ReviewSectionPr
         </form>
       )}
 
-      {/* Reviews list */}
       {reviews.length === 0 ? (
         <div className="text-center py-12 bg-cream-surface rounded-3xl border border-brown-border">
           <div className="text-5xl mb-3">📝</div>
@@ -142,25 +146,19 @@ export default function ReviewSection({ initialReviews, items }: ReviewSectionPr
       ) : (
         <div className="space-y-4">
           {reviews.map((review) => {
-            const authorName = (review.user?.user_metadata?.full_name ?? review.user?.email?.split("@")[0] ?? "Coffee Lover");
+            const name = (review.user?.user_metadata?.full_name ?? review.user?.email?.split("@")[0] ?? "Coffee Lover");
             return (
               <div key={review.id} className="bg-cream-surface rounded-3xl border border-brown-border p-5 shadow-sm">
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-full bg-orange-pale text-orange font-bold text-sm flex items-center justify-center flex-none">
-                    {getInitials(authorName)}
+                    {getInitials(name)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between flex-wrap gap-1">
-                      <p className="font-semibold text-espresso text-sm">{authorName}</p>
+                      <p className="font-semibold text-espresso text-sm">{name}</p>
                       <span className="text-xs text-brown-muted">{formatDate(review.created_at)}</span>
                     </div>
                     <StarRating rating={review.rating} size="sm" />
-                    {(review.item as { name?: string; variant?: string }) && (
-                      <p className="text-xs text-brown-muted mt-0.5">
-                        {(review.item as { name?: string }).name}
-                        {(review.item as { variant?: string }).variant && ` · ${(review.item as { variant?: string }).variant}`}
-                      </p>
-                    )}
                     <p className="text-brown text-sm mt-2 leading-relaxed">{review.body}</p>
                   </div>
                 </div>

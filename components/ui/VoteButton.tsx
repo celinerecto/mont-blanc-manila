@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getAnonId } from "@/lib/anonId";
 import { cn } from "@/lib/utils";
 
 interface VoteButtonProps {
@@ -15,7 +16,6 @@ export default function VoteButton({
   itemId,
   initialCount,
   initialVoted,
-  onAuthRequired,
 }: VoteButtonProps) {
   const [voted, setVoted] = useState(initialVoted);
   const [count, setCount] = useState(initialCount);
@@ -24,36 +24,31 @@ export default function VoteButton({
   const supabase = createClient();
 
   const handleVote = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      onAuthRequired?.();
-      return;
-    }
-
     if (loading) return;
     setLoading(true);
 
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id ?? getAnonId();
+
     try {
       if (voted) {
-        // Remove vote
         const now = new Date();
         const week = getWeekNumber(now);
         await supabase
           .from("votes")
           .delete()
           .eq("item_id", itemId)
-          .eq("user_id", user.id)
+          .eq("user_id", userId)
           .eq("week_number", week)
           .eq("year", now.getFullYear());
         setVoted(false);
         setCount((c) => Math.max(0, c - 1));
       } else {
-        // Add vote
         const now = new Date();
         const week = getWeekNumber(now);
         const { error } = await supabase.from("votes").insert({
           item_id: itemId,
-          user_id: user.id,
+          user_id: userId,
           week_number: week,
           year: now.getFullYear(),
         });
@@ -67,7 +62,7 @@ export default function VoteButton({
     } finally {
       setLoading(false);
     }
-  }, [voted, loading, itemId, supabase, onAuthRequired]);
+  }, [voted, loading, itemId, supabase]);
 
   return (
     <button
@@ -83,9 +78,7 @@ export default function VoteButton({
       )}
       aria-label={voted ? "Remove vote" : "Vote for this Mont Blanc"}
     >
-      <span className={cn("text-base transition-transform", animating && "scale-125")}>
-        {voted ? "☕" : "☕"}
-      </span>
+      <span className={cn("text-base transition-transform", animating && "scale-125")}>☕</span>
       <span>{count}</span>
     </button>
   );

@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { createClient } from "@/lib/supabase/client";
-import AuthModal from "@/components/ui/AuthModal";
+import { getAnonId } from "@/lib/anonId";
 
 const NEIGHBORHOODS = [
   "BGC", "Makati", "Poblacion", "Quezon City", "Mandaluyong",
@@ -11,7 +11,6 @@ const NEIGHBORHOODS = [
 ];
 
 export default function SubmitPage() {
-  const [showAuth, setShowAuth] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
@@ -48,7 +47,7 @@ export default function SubmitPage() {
     setError("");
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setShowAuth(true); return; }
+    const userId = user?.id ?? getAnonId();
 
     if (!form.cafeName || !form.address || !form.neighborhood) {
       setError("Please fill in the café name, address, and neighbourhood.");
@@ -69,7 +68,7 @@ export default function SubmitPage() {
           website: form.website || null,
           hours: form.hours || null,
           is_verified: false,
-          submitted_by: user.id,
+          submitted_by: userId,
         })
         .select()
         .single();
@@ -94,7 +93,7 @@ export default function SubmitPage() {
       // Upload photo
       if (photoFile && item) {
         const ext = photoFile.name.split(".").pop();
-        const path = `${user.id}/${item.id}.${ext}`;
+        const path = `${userId}/${item.id}.${ext}`;
         const { error: uploadErr } = await supabase.storage
           .from("photos")
           .upload(path, photoFile, { upsert: true });
@@ -104,7 +103,7 @@ export default function SubmitPage() {
           await supabase.from("photos").insert({
             item_id: item.id,
             cafe_id: cafe.id,
-            user_id: user.id,
+            user_id: userId,
             storage_url: publicUrl,
           });
         }
@@ -136,8 +135,6 @@ export default function SubmitPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12">
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
-
       <div className="mb-10">
         <h1 className="font-playfair text-4xl font-bold text-espresso mb-2">Submit a Café 🏔️</h1>
         <p className="text-brown-muted">
